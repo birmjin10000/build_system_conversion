@@ -1,0 +1,30 @@
+#cmakedefine SECURE_COMPILE @SECURE_COMPILE@
+#cmakedefine SECURE SECURE_COMPILE
+#cmakedefine EDITOR (!SECURE)
+#cmakedefine TAGS (!SECURE)
+#cmakedefine USERFILE (!SECURE)
+#cmakedefine GLOB (!SECURE)
+#cmakedefine PIPEC (!SECURE)
+#cmakedefine LOGFILE (!SECURE)
+
+#cmakedefine GNU_OPTIONS @GNU_OPTIONS@
+#cmakedefine ONLY_RETURN @ONLY_RETURN@
+
+#cmakedefine LESSKEYFILE @LESSKEYFILE@
+
+#cmakedefine MSDOS_COMPILER @MSDOS_COMPILER@
+#cmakedefine PATHNAME_SEP @PATHNAME_SEP@
+#cmakedefine TGETENT_OK @TGETENT_OK@
+#cmakedefine HAVE_SYS_TYPES_H @HAVE_SYS_TYPES_H@
+#cmakedefine HAVE_ERROR @HAVE_ERROR@
+#cmakedefine HAVE_TIME @HAVE_TIME@
+#cmakedefine HAVE_SHELL @HAVE_SHELL@
+
+//#cmakedefine DEF_METACHARS @DEF_METACHARS@
+#cmakedefine DEF_METAESCAPE @DEF_METAESCAPE@
+
+#cmakedefine HAVE_DUP @HAVE_DUP@
+#cmakedefine HAVE_MEMCPY @HAVE_MEMCPY@
+#cmakedefine HAVE_STRCHR @HAVE_STRCHR@
+#cmakedefine HAVE_STRSTR @HAVE_STRSTR@
+
