@@ -68,12 +68,18 @@ CHECK_INCLUDE_FILE(sys/ndir.h HAVE_SYS_NDIR_H)
 CHECK_INCLUDE_FILE(sys/tree.h HAVE_SYS_TREE_H)
 CHECK_INCLUDE_FILE(util.h HAVE_UTIL_H)
 
+CHECK_INCLUDE_FILE(resolv.h HAVE_RESOLV_H)
+if (HAVE_RESOLV_H)
+  MESSAGE("resolv.h is exist in this system.")
+endif (HAVE_RESOLV_H)
+
 # Look for library needed for flock.
 
 # Check for functions that are replaced or omitted.
 CHECK_FUNCTION_EXISTS(dirfd HAVE_DIRFD)
 CHECK_FUNCTION_EXISTS(flock HAVE_FLOCK)
 CHECK_FUNCTION_EXISTS(prctl HAVE_PRCTL)
+
 CHECK_FUNCTION_EXISTS(sysconf HAVE_SYSCONF)
 
 SET(COMPAT_LIB_PATH "compat")
@@ -81,7 +87,6 @@ SET(COMPAT_LIB_PATH "compat")
 # Check for functions with a compatibility implementation.
 CHECK_FUNCTION_EXISTS(asprintf HAVE_ASPRINTF)
 if (NOT HAVE_ASPRINTF)
-  MESSAGE("haha - HAVE_ASPRINTF is not defined")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/asprintf.c)
 else (NOT HAVE_ASPRINTF)
   add_definitions(-DHAVE_ASPRINTF)
@@ -89,7 +94,6 @@ endif (NOT HAVE_ASPRINTF)
 
 CHECK_FUNCTION_EXISTS(cfmakeraw HAVE_CFMAKERAW)
 if (NOT HAVE_CFMAKERAW)
-  MESSAGE("HAVE_CFMAKERAW is not defined")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/cfmakeraw.c)
 else (NOT HAVE_CFMAKERAW)
   add_definitions(-DHAVE_CFMAKERAW)
@@ -97,7 +101,6 @@ endif (NOT HAVE_CFMAKERAW)
 
 CHECK_FUNCTION_EXISTS(closefrom HAVE_CLOSEFROM)
 if (NOT HAVE_CLOSEFROM)
-  MESSAGE("hoho - HAVE_CLOSEFROM is not defined")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/closefrom.c)
 else (NOT HAVE_CLOSEFROM)
   add_definitions(-DHAVE_CLOSEFROM)
@@ -146,7 +149,6 @@ CHECK_FUNCTION_EXISTS(setenv HAVE_SETENV)
 
 CHECK_FUNCTION_EXISTS(setproctitle HAVE_SETPROCTITLE)
 if (NOT HAVE_SETPROCTITLE)
-  MESSAGE("HAVE_SETPROCTITLE is not defined!")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/setproctitle.c)
 else (NOT HAVE_SETPROCTITLE)
   add_definitions(-DHAVE_SETPROCTITLE=1)
@@ -156,7 +158,6 @@ CHECK_FUNCTION_EXISTS(strcasestr HAVE_STRCASESTR)
 
 CHECK_FUNCTION_EXISTS(strlcat HAVE_STRLCAT)
 if (NOT HAVE_STRLCAT)
-  MESSAGE ("HAVE_STRLCAT is not defined!")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/strlcat.c)
 else (NOT HAVE_STRLCAT)
   add_definitions(-DHAVE_STRLCAT=1)
@@ -164,7 +165,6 @@ endif (NOT HAVE_STRLCAT)
 
 CHECK_FUNCTION_EXISTS(strlcpy HAVE_STRLCPY)
 if (NOT HAVE_STRLCPY)
-  MESSAGE("HAVE_STRLCPY is not defined!")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/strlcpy.c)
 else (NOT HAVE_STRLCPY)
   add_definitions(-DHAVE_STRLCPY=1)
@@ -175,14 +175,12 @@ CHECK_FUNCTION_EXISTS(strsep HAVE_STRSEP)
 
 CHECK_FUNCTION_EXISTS(strtonum HAVE_STRTONUM)
 if (NOT HAVE_STRTONUM)
-  MESSAGE ("HAVE_STRTONUM is not defined!")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/strtonum.c)
 else (NOT HAVE_STRTONUM)
   add_definitions(-DHAVE_STRTONUM=1)
 endif (NOT HAVE_STRTONUM)
 
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
-
 
 
 find_package(LibEvent REQUIRED)
@@ -202,11 +200,10 @@ endif (CURSES_FOUND)
 
 # Look for clock_gettime. Must come before event_init.
 CHECK_LIBRARY_EXISTS(rt clock_gettime "time.h" HAVE_CLOCK_GETTIME)
-
 if (NOT HAVE_CLOCK_GETTIME)
-   set(CMAKE_EXTRA_INCLUDE_FILES time.h)
-   CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME)
-   SET(CMAKE_EXTRA_INCLUDE_FILES)
+  set(CMAKE_EXTRA_INCLUDE_FILES time.h)
+  CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME)
+  SET(CMAKE_EXTRA_INCLUDE_FILES)
 endif()
 
 # Look for utf8proc.
@@ -214,14 +211,21 @@ OPTION(UTF8PROC_ENABLE "use utf8proc if it is installed" OFF)
 
 # Check for b64_ntop. If we have b64_ntop, we assume b64_pton as well.
 SET(found_b64_ntop "no")
-CHECK_PROTOTYPE_DEFINITION(b64_ntop "b64_ntop(NULL, 0, NULL, 0);" "NULL" "sys/types.h;netinet/in.h;resolv.h" HAVE_B64_NTOP_PROTO_DEFINED)
+CHECK_PROTOTYPE_DEFINITION(b64_ntop "b64_ntop(NULL, 0, NULL, 0)" "NULL" "sys/types.h;netinet/in.h;resolv.h" HAVE_B64_NTOP_PROTO_DEFINED)
 if (HAVE_B64_NTOP_PROTO_DEFINED)
   SET(found_b64_ntop "yes")
+else (HAVE_B64_NTOP_PROTO_DEFINED)
+  CHECK_SYMBOL_EXISTS(b64_ntop "resolv.h;sys/types.h;netinet/in.h" B64_NTOP_DEFINED)
+  if (B64_NTOP_DEFINED)
+    SET(found_b64_ntop "yes")
+  endif (B64_NTOP_DEFINED)
 endif (HAVE_B64_NTOP_PROTO_DEFINED)
 
-MESSAGE("found_b64_ntop:" ${found_b64_ntop})
 if ("${found_b64_ntop}" STREQUAL "yes")
+  MESSAGE("b64_ntop function is already on system!")
   add_definitions(-DHAVE_B64_NTOP=1)
+  find_library(LIBRESOLV_LIB resolv)
+  target_link_libraries(${TARGET} ${LIBRESOLV_LIB})
 else ("${found_b64_ntop}" STREQUAL "yes")
   MESSAGE("Not really!!")
   LIST(APPEND COMPAT_LIB_SOURCES ${COMPAT_LIB_PATH}/base64.c)
@@ -333,12 +337,35 @@ endif(FORKPTY_DEFINED)
 
 
 # Look for a suitable queue.h.
-CHECK_INCLUDE_FILE("sys/queue.h" HAVE_QUEUE_H)
-CHECK_INCLUDE_FILE("sys/tree.h" HAVE_TREE_H)
-if (HAVE_QUEUE_H)
-  MESSAGE(HAVE_QUEUE_H is defined!)
-endif (HAVE_QUEUE_H)
+SET(found_queue_h "no")
+CHECK_SYMBOL_EXISTS(TAILQ_CONCAT "sys/queue.h" TAILQ_CONCAT_DEFINED)
+if (TAILQ_CONCAT_DEFINED)
+  SET(found_queue_h "yes")
+else (TAILQ_CONCAT_DEFINED)
+  SET(found_queue_h "no")
+endif (TAILQ_CONCAT_DEFINED)
 
+CHECK_SYMBOL_EXISTS(TAILQ_PREV "sys/queue.h" TAILQ_PREV_DEFINED)
+if (TAILQ_PREV_DEFINED)
+  SET(found_queue.h "yes")
+else (TAILQ_PREV_DEFINED)
+  SET(found_queue.h "no")
+endif(TAILQ_PREV_DEFINED)
+
+CHECK_SYMBOL_EXISTS(TAILQ_REPLACE "sys/queue.h" TAILQ_REPLACE_DEFINED)
+if (NOT TAILQ_REPLACE_DEFINED)
+  SET(found_queue_h "no")
+endif (NOT TAILQ_REPLACE_DEFINED)
+
+if ("${found_queue_h}" STREQUAL "yes")
+  add_definitions(-DHAVE_QUEUE_H)
+endif ("${found_queue_h}" STREQUAL "yes")
+
+# Look for prctl(PR_SET_NAME).
+CHECK_SYMBOL_EXISTS(PR_SET_NAME "sys/prctl.h" PR_SET_NAME_DEFINED)
+if (PR_SET_NAME_DEFINED)
+  add_definitions(-DHAVE_PR_SET_NAME)
+endif(PR_SET_NAME_DEFINED)
 
 MESSAGE(${COMPAT_LIB_SOURCES})
 TARGET_SOURCES(${TARGET} PRIVATE ${COMPAT_LIB_SOURCES})
