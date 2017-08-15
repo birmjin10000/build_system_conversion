@@ -1,3 +1,8 @@
+#define CMD_HISTORY 1
+#define HILITE_SEARCH 1
+#define GNU_OPTIONS 1
+#define ONLY_RETURN 0
+
 #cmakedefine SECURE_COMPILE @SECURE_COMPILE@
 #cmakedefine SECURE SECURE_COMPILE
 #cmakedefine EDITOR (!SECURE)
@@ -7,10 +12,18 @@
 #cmakedefine PIPEC (!SECURE)
 #cmakedefine LOGFILE (!SECURE)
 
-#cmakedefine GNU_OPTIONS @GNU_OPTIONS@
-#cmakedefine ONLY_RETURN @ONLY_RETURN@
+#cmakedefine SHELL_ESCAPE (!SECURE)
+#cmakedefine EXAMINE (!SECURE)
+#cmakedefine TAB_COMPLETE_FILENAME (!SECURE)
 
-#cmakedefine LESSKEYFILE @LESSKEYFILE@
+//#cmakedefine GNU_OPTIONS @GNU_OPTIONS@
+//#cmakedefine ONLY_RETURN @ONLY_RETURN@
+
+//#cmakedefine LESSKEYFILE @LESSKEYFILE@
+#define	LESSKEYFILE		".less"
+#define	LESSKEYFILE_SYS		SYSDIR "/sysless"
+#define	DEF_LESSKEYINFILE	".lesskey"
+#define LESSHISTFILE		".lesshst"
 
 #cmakedefine MSDOS_COMPILER @MSDOS_COMPILER@
 #cmakedefine PATHNAME_SEP @PATHNAME_SEP@
@@ -21,10 +34,40 @@
 #cmakedefine HAVE_SHELL @HAVE_SHELL@
 
 //#cmakedefine DEF_METACHARS @DEF_METACHARS@
-#cmakedefine DEF_METAESCAPE @DEF_METAESCAPE@
+//#cmakedefine DEF_METAESCAPE @DEF_METAESCAPE@
+#define	DEF_METACHARS	"; *?\t\n'\"()<>[]|&^`#\\$%=~"
+#define	DEF_METAESCAPE	"\\"
 
 #cmakedefine HAVE_DUP @HAVE_DUP@
 #cmakedefine HAVE_MEMCPY @HAVE_MEMCPY@
 #cmakedefine HAVE_STRCHR @HAVE_STRCHR@
 #cmakedefine HAVE_STRSTR @HAVE_STRSTR@
 
+#cmakedefine RETSIGTYPE @RETSIGTYPE@
+#cmakedefine off_t @off_t@
+#cmakedefine size_t @size_t@
+
+/*
+ * Sizes of various buffers.
+ */
+#if 0 /* old sizes for small memory machines */
+#define	CMDBUF_SIZE	512	/* Buffer for multichar commands */
+#define	UNGOT_SIZE	100	/* Max chars to unget() */
+#define	LINEBUF_SIZE	1024	/* Max size of line in input file */
+#define	OUTBUF_SIZE	1024	/* Output buffer */
+#define	PROMPT_SIZE	200	/* Max size of prompt string */
+#define	TERMBUF_SIZE	2048	/* Termcap buffer for tgetent */
+#define	TERMSBUF_SIZE	1024	/* Buffer to hold termcap strings */
+#define	TAGLINE_SIZE	512	/* Max size of line in tags file */
+#define	TABSTOP_MAX	32	/* Max number of custom tab stops */
+#else /* more reasonable sizes for modern machines */
+#define	CMDBUF_SIZE	2048	/* Buffer for multichar commands */
+#define	UNGOT_SIZE	200	/* Max chars to unget() */
+#define	LINEBUF_SIZE	1024	/* Initial max size of line in input file */
+#define	OUTBUF_SIZE	1024	/* Output buffer */
+#define	PROMPT_SIZE	2048	/* Max size of prompt string */
+#define	TERMBUF_SIZE	2048	/* Termcap buffer for tgetent */
+#define	TERMSBUF_SIZE	1024	/* Buffer to hold termcap strings */
+#define	TAGLINE_SIZE	1024	/* Max size of line in tags file */
+#define	TABSTOP_MAX	128	/* Max number of custom tab stops */
+#endif
