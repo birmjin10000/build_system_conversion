@@ -1,10 +1,27 @@
 cmake_minimum_required(VERSION 3.9)
 project(myTMUX VERSION 2.5)
+# The version number
+set(VERSION 2.5)
+configure_file("ProjectConfig.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/ProjectConfig.h")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules")
 set(TARGET tmux)
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+
+# Is ENABLE_DEBUG ON?
+OPTION(ENABLE_DEBUG "enable debug build flags" OFF)
+MESSAGE(${CMAKE_C_COMPILER_ID})
+if (${CMAKE_C_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
+  ADD_DEFINITIONS(-std=gnu99 -O2)
+if (ENABLE_DEBUG)
+  ADD_DEFINITIONS(-g -Wno-long-long -Wall -W -Wformat=2 -Wmissing-prototypes -Wstrict-prototypes \\
+    -Wmissing-declarations -Wwrite-strings -Wshadow -Wpointer-arith -Wsign-compare -Wundef \\
+    -Wbad-function-cast -Winline -Wcast-align -Wdeclaration-after-statement -Wno-pointer-sign \\
+    -Wno-attributes -Wno-unused-result -DDEBUG)
+endif(ENABLE_DEBUG)
+  ADD_DEFINITIONS(-iquote)
+endif (${CMAKE_C_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 
 # Figure out the platform.
 IF(${CMAKE_SYSTEM_NAME} MATCHES "AIX")
@@ -44,8 +61,8 @@ set(tmux_SOURCES alerts.c arguments.c attributes.c cfg.c client.c cmd-attach-ses
   window-choose.c window-clock.c window-copy.c window.c xmalloc.c xmalloc.h xterm-keys.c)
 
 string(CONCAT nodist_tmux_SOURCES osdep- ${PLATFORM} .c)
-MESSAGE(${nodist_tmux_SOURCES})
-add_executable(${TARGET} ${tmux_SOURCES} ${nodist_tmux_SOURCES})
+
+add_executable(${TARGET} ${tmux_SOURCES})
 
 INCLUDE(CheckSymbolExists)
 INCLUDE(CheckIncludeFile)
@@ -206,8 +223,54 @@ if (NOT HAVE_CLOCK_GETTIME)
   SET(CMAKE_EXTRA_INCLUDE_FILES)
 endif()
 
+# Look for utempter.
+OPTION(ENABLE_UTEMPTER "use utempter if it is installed" OFF)
+if (ENABLE_UTEMPTER)
+  CHECK_INCLUDE_FILE(utempter.h FOUND_utempter_H)
+  if (FOUND_utempter_H)
+    CHECK_FUNCTION_EXISTS(utempter_add_record FOUND_utempter_add_record)
+    if (FOUND_utempter_add_record)
+      ADD_DEFINITIONS(-DHAVE_UTEMPTER=1)
+    else (FOUND_utempter_add_record)
+      FIND_LIBRARY(UTEMPTER_LIB_PATH utempter)
+      CHECK_LIBRARY_EXISTS(utempter utempter_add_record ${UTEMPTER_LIB_PATH} FOUND_UTEMPTER_LIB)
+      if (FOUND_UTEMPTER_LIB)
+        ADD_DEFINITIONS(-DHAVE_UTEMPTER=1)
+      else (FOUND_UTEMPTER_LIB)
+        MESSAGE("utempter not found")
+      endif (FOUND_UTEMPTER_LIB)
+    endif(FOUND_utempter_add_record)
+  else(FOUND_utempter_H)
+    MESSAGE("utempter not found")
+  endif (FOUND_utempter_H)
+endif (ENABLE_UTEMPTER)
+
 # Look for utf8proc.
-OPTION(UTF8PROC_ENABLE "use utf8proc if it is installed" OFF)
+OPTION(ENABLE_UTF8PROC "use utf8proc if it is installed" OFF)
+if (ENABLE_UTF8PROC)
+  CHECK_INCLUDE_FILE(utf8proc.h FOUND_utf8proc_H)
+  if (FOUND_utf8proc_H)
+    CHECK_FUNCTION_EXISTS(utf8proc_charwidth FOUND_utf8proc_charwidth)
+    if (FOUND_utf8proc_charwidth)
+      ADD_DEFINITIONS(-DHAVE_UTF8PROC=1)
+      MESSAGE("Adding compatible utf8proc.c...---1")
+      LIST(APPEND nodist_tmux_SOURCES ${COMPAT_LIB_PATH}/utf8proc.c) # Add new file to source list
+    else(FOUND_utf8proc_charwidth)
+      find_library(UTF8PROC_LIB_PATH utf8proc)
+      CHECK_LIBRARY_EXISTS(utf8proc utf8proc_charwidth ${UTF8PROC_LIB_PATH} FOUND_UTF8PROC_LIB)
+      if (FOUND_UTF8PROC_LIB)
+        ADD_DEFINITIONS(-DHAVE_UTF8PROC=1)
+        MESSAGE("Adding compatible utf8proc.c...---2")
+        target_link_libraries(${TARGET} ${UTF8PROC_LIB_PATH})
+        LIST(APPEND nodist_tmux_SOURCES ${COMPAT_LIB_PATH}/utf8proc.c) # Add new file to source list
+      else(FOUND_UTF8PROC_LIB)
+        MESSAGE("utf8proc not found")
+      endif(FOUND_UTF8PROC_LIB)
+    endif(FOUND_utf8proc_charwidth)
+  else(FOUND_utf8proc_H)
+    MESSAGE("utf8proc not found")
+  endif (FOUND_utf8proc_H)
+endif (ENABLE_UTF8PROC)
 
 # Check for b64_ntop. If we have b64_ntop, we assume b64_pton as well.
 SET(found_b64_ntop "no")
@@ -331,6 +394,7 @@ else(FORKPTY_DEFINED)
     add_definitions(-DHAVE_FORKPTY=1)
   else(${FOUND_FORKPTY})
     STRING(CONCAT forkpty_source ${COMPAT_LIB_PATH}/forkpty- ${PLATFORM} .c)
+    MESSAGE("Adding forkpty-platform.c...")
     LIST(APPEND nodist_tmux_SOURCES ${forkpty_source})
   endif(${FOUND_FORKPTY})
 endif(FORKPTY_DEFINED)
@@ -372,6 +436,8 @@ TARGET_SOURCES(${TARGET} PRIVATE ${COMPAT_LIB_SOURCES})
 #add_library(COMPAT_LIB ${COMPAT_LIB_SOURCES})
 #target_link_libraries(${TARGET} ${COMPAT_LIB})
 
+MESSAGE(${nodist_tmux_SOURCES})
+TARGET_SOURCES(${TARGET} PRIVATE ${nodist_tmux_SOURCES})
 
 # preprocessor definitions
 target_compile_definitions(${TARGET} PRIVATE TMUX_CONF="/usr/local/etc/tmux.conf")
